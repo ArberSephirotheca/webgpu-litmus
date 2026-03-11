@@ -1,3 +1,5 @@
+enable subgroups;
+
 struct Memory {
   value: array<u32>,
 };
@@ -112,15 +114,22 @@ fn do_stress(iterations: u32, pattern: u32, workgroup_id: u32) {
 override workgroupXSize: u32;
 @compute @workgroup_size(workgroupXSize) fn main(
   @builtin(local_invocation_id) local_invocation_id : vec3<u32>,
+  @builtin(subgroup_invocation_id) subgroup_invocation_id: u32,
   @builtin(workgroup_id) workgroup_id : vec3<u32>) {
   let shuffled_workgroup = shuffled_workgroups.value[workgroup_id[0]];
   if (shuffled_workgroup < stress_params.testing_workgroups) {
-    let total_ids = u32(workgroupXSize);
+    let subgroup_active_size = subgroupAdd(1u);
+    let subgroup_local_id_0 = subgroup_invocation_id;
+    let subgroup_local_id_1 = permute_id(subgroup_local_id_0, stress_params.permute_first, subgroup_active_size);
+    let y_lane_0 = permute_id(subgroup_local_id_0, stress_params.permute_second, subgroup_active_size);
+    let y_lane_1 = permute_id(subgroup_local_id_1, stress_params.permute_second, subgroup_active_size);
     let id_0 = local_invocation_id[0];
-    let id_1 = permute_id(local_invocation_id[0], stress_params.permute_first, u32(workgroupXSize));
+    let id_1 = subgroupShuffle(local_invocation_id[0], subgroup_local_id_1);
+    let y_id_0 = subgroupShuffle(local_invocation_id[0], y_lane_0);
+    let y_id_1 = subgroupShuffle(local_invocation_id[0], y_lane_1);
     let x_0 = (id_0) * stress_params.mem_stride * 2u;
-    let y_0 = (permute_id(id_0, stress_params.permute_second, total_ids)) * stress_params.mem_stride * 2u + stress_params.location_offset;
-    let y_1 = (permute_id(id_1, stress_params.permute_second, total_ids)) * stress_params.mem_stride * 2u + stress_params.location_offset;
+    let y_0 = y_id_0 * stress_params.mem_stride * 2u + stress_params.location_offset;
+    let y_1 = y_id_1 * stress_params.mem_stride * 2u + stress_params.location_offset;
     let x_1 = (id_1) * stress_params.mem_stride * 2u;
     if (stress_params.pre_stress == 1u) {
       do_stress(stress_params.pre_stress_iterations, stress_params.pre_stress_pattern, shuffled_workgroup);

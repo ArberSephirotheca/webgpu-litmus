@@ -73,8 +73,16 @@ async function getDevice() {
     console.log("Failed to get GPU adapter.");
     return;
   }
-  const device = await adapter.requestDevice();
+  const requiredFeatures = [];
+  if (adapter.features.has("subgroups")) {
+    requiredFeatures.push("subgroups");
+  }
+  const device = await adapter.requestDevice({ requiredFeatures });
   return device;
+}
+
+function shaderRequiresSubgroups(shaderCode) {
+  return typeof shaderCode === "string" && shaderCode.includes("enable subgroups;");
 }
 
 function createBuffer(device, bufferSize, copySrc, copyDst, bufferUsage = GPUBufferUsage.STORAGE) {
@@ -574,6 +582,10 @@ async function setupTest(testParams) {
 
 export async function runLitmusTest(shaderCode, resultShaderCode, testParams, iterations, handleResult) {
   const setup = await setupTest(testParams);
+  if ((shaderRequiresSubgroups(shaderCode) || shaderRequiresSubgroups(resultShaderCode)) && !setup.device.features.has("subgroups")) {
+    alert("This test variant requires WebGPU subgroup support, but your adapter does not expose the 'subgroups' feature.");
+    return;
+  }
   const computePipeline = createComputePipeline(setup.device, setup.bindGroupLayout, shaderCode, testParams.workgroupSize);
   const resultComputePipeline = createComputePipeline(setup.device, setup.resultBindGroupLayout, resultShaderCode, testParams.workgroupSize);
   const start = Date.now();
@@ -694,6 +706,10 @@ export async function runTimeBoundingLitmusTest(shaderCode, resultShaderCode, te
   const device = await getDevice();
   if (device === undefined) {
     alert("WebGPU not enabled or supported!")
+    return;
+  }
+  if ((shaderRequiresSubgroups(shaderCode) || shaderRequiresSubgroups(resultShaderCode)) && !device.features.has("subgroups")) {
+    alert("This test variant requires WebGPU subgroup support, but your adapter does not expose the 'subgroups' feature.");
     return;
   }
   let testingThreads = testParams.workgroupSize * testParams.testingWorkgroups;
