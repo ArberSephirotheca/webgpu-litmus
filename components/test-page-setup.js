@@ -149,10 +149,19 @@ function chartConfig(pageState, testParams, uiParams, tooltipFilter) {
   }
 }
 
+function getVisibleOutcomeTotal(testState, keys) {
+  return keys.reduce((sum, key) => sum + testState[key].visibleState, 0);
+}
+
 function WeakOutcomeSummary(props) {
+  const totalOutcomes = getVisibleOutcomeTotal(props.testState, props.keys);
+  const weakCount = props.testState.weak.visibleState;
+  const weakPercent = totalOutcomes === 0 ? 0 : (weakCount / totalOutcomes) * 100;
   return (
     <div className="notification is-danger is-light mb-4">
-      <p><b>Weak Outcome Count:</b> {props.testState.weak.visibleState.toLocaleString()}</p>
+      <p><b>Weak Outcome Count:</b> {weakCount.toLocaleString()}</p>
+      <p><b>Total Observed Outcomes:</b> {totalOutcomes.toLocaleString()}</p>
+      <p><b>Weak Outcome Percentage:</b> {weakPercent.toFixed(2)}%</p>
       <p><b>Weak Outcome:</b> {props.testState.weak.label}</p>
     </div>
   );
@@ -346,7 +355,7 @@ export function makeTestPage(props) {
             : <div className="columns mr-2">
               <div className="column is-two-thirds">
                 <div className="section">
-                  <WeakOutcomeSummary testState={props.testState} />
+                  <WeakOutcomeSummary testState={props.testState} keys={props.keys} />
                   <div className="columns">
                     <Bar
                       data={props.chartData}
