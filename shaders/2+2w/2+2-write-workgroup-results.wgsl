@@ -1,5 +1,3 @@
-enable subgroups;
-
 struct TestResults {
   seq0: atomic<u32>,
   seq1: atomic<u32>,
@@ -51,12 +49,9 @@ fn stripe_workgroup(workgroup_id: u32, local_id: u32) -> u32 {
 override workgroupXSize: u32;
 @compute @workgroup_size(workgroupXSize) fn main(
   @builtin(local_invocation_id) local_invocation_id : vec3<u32>,
-  @builtin(subgroup_invocation_id) subgroup_invocation_id: u32,
   @builtin(workgroup_id) workgroup_id : vec3<u32>) {
-  let subgroup_active_size = subgroupAdd(1u);
-  let y_lane_0 = permute_id(subgroup_invocation_id, stress_params.permute_second, subgroup_active_size);
-  let y_id_0 = subgroupShuffle(local_invocation_id[0], y_lane_0);
   let id_0 = workgroup_id[0] * u32(workgroupXSize) + local_invocation_id[0];
+  let y_id_0 = atomicLoad(&read_results.value[id_0].r0);
   let x_0 = (id_0) * stress_params.mem_stride * 2u;
   let mem_x_0 = atomicLoad(&test_locations.value[x_0]);
   let y_0 = (workgroup_id[0] * u32(workgroupXSize) + y_id_0) * stress_params.mem_stride * 2u + stress_params.location_offset;

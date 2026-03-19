@@ -143,6 +143,7 @@ override workgroupXSize: u32;
     storageBarrier();
     atomicStore(&test_locations.value[x_1], 1u);
     workgroupBarrier();
+    atomicStore(&results.value[shuffled_workgroup * u32(workgroupXSize) + id_0].r0, y_id_0);
   } else if (stress_params.mem_stress == 1u) {
     do_stress(stress_params.mem_stress_iterations, stress_params.mem_stress_pattern, shuffled_workgroup);
   }
