@@ -149,6 +149,15 @@ function chartConfig(pageState, testParams, uiParams, tooltipFilter) {
   }
 }
 
+function WeakOutcomeSummary(props) {
+  return (
+    <div className="notification is-danger is-light mb-4">
+      <p><b>Weak Outcome Count:</b> {props.testState.weak.visibleState.toLocaleString()}</p>
+      <p><b>Weak Outcome:</b> {props.testState.weak.label}</p>
+    </div>
+  );
+}
+
 function DropdownOption(props) {
   return (<option value={props.value}>{props.value}</option>)
 }
@@ -337,6 +346,7 @@ export function makeTestPage(props) {
             : <div className="columns mr-2">
               <div className="column is-two-thirds">
                 <div className="section">
+                  <WeakOutcomeSummary testState={props.testState} />
                   <div className="columns">
                     <Bar
                       data={props.chartData}
